@@ -9,7 +9,7 @@ package modelos;
  *
  * @author anlesvavor
  */
-public class calidadDelAtributo {
+public class calidadDelAtributo implements Comparable<calidadDelAtributo> {
     private double rank;
     private int indice;
     private String nombre;
@@ -46,5 +46,17 @@ public class calidadDelAtributo {
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
+
+    @Override
+    public int compareTo(calidadDelAtributo otro) {
+        return getRank() > otro.getRank() ? -1 : getRank() < otro.getRank() ? 1 : 0;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%10.3f %3d %s\n", getRank(), getIndice(), getNombre());
+    }
+    
+    
     
 }

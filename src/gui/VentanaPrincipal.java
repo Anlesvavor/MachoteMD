@@ -6,11 +6,14 @@
 package gui;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import modelos.calidadDelAtributo;
 import weka.attributeSelection.GainRatioAttributeEval;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
@@ -162,12 +165,20 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             GainRatioAttributeEval evaluador = new GainRatioAttributeEval();
             evaluador.buildEvaluator(instances);
             String resultado = "Ranked attibutes:\n";
+            ArrayList<calidadDelAtributo> lista = new ArrayList<>();
             for(int i = 0; i < instances.numAttributes()-1;i++){
                 double rank = evaluador.evaluateAttribute(i);
-                resultado += "" + rank + " " + (i+1) + " " + instances.attribute(i).name() + "\n";
+                calidadDelAtributo atri = new calidadDelAtributo(rank, i+1, instances.attribute(i).name());
+                lista.add(atri);
+                resultado += String.format("%10.3f %3d %s\n", rank, i+1, instances.attribute(i).name());
             }
             txtResultado.setText(resultado);
-            
+            Collections.sort(lista);
+            resultado = "\nAtributos ordenados:\n";
+            for (calidadDelAtributo calidadDelAtributo : lista){
+                resultado += calidadDelAtributo.toString();
+            }
+            txtResultado.append(resultado);
             
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(null, "No puedo hacer la selección de los atributos");
