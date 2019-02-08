@@ -8,6 +8,7 @@ package gui;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFileChooser;
@@ -15,8 +16,12 @@ import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import modelos.calidadDelAtributo;
 import weka.attributeSelection.GainRatioAttributeEval;
+import weka.classifiers.Evaluation;
+import weka.classifiers.trees.J48;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Remove;
 
 /**
  *
@@ -45,6 +50,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
+        jButton4 = new javax.swing.JButton();
         lblEstado = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         txtResultado = new javax.swing.JTextArea();
@@ -68,7 +74,19 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             }
         });
 
-        jButton3.setText("jButton3");
+        jButton3.setText("Crear modelo y evaluarlo");
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
+
+        jButton4.setText("Crear todos los modelos");
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton4ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout pnlVelocidadLayout = new javax.swing.GroupLayout(pnlVelocidad);
         pnlVelocidad.setLayout(pnlVelocidadLayout);
@@ -78,10 +96,12 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jButton1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton3)
-                .addContainerGap(146, Short.MAX_VALUE))
+                .addComponent(jButton4)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         pnlVelocidadLayout.setVerticalGroup(
             pnlVelocidadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -90,7 +110,8 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                 .addGroup(pnlVelocidadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton1)
                     .addComponent(jButton2)
-                    .addComponent(jButton3))
+                    .addComponent(jButton3)
+                    .addComponent(jButton4))
                 .addContainerGap(15, Short.MAX_VALUE))
         );
 
@@ -133,24 +154,24 @@ public class VentanaPrincipal extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
- 
+
     Instances instances;
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         JFileChooser chooser = new JFileChooser();
         chooser.setCurrentDirectory(new File("/home/anlesvavor/weka-3-8-5/data"));
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
-        "ARFF & CSV Databases", "arff", "csv");
+                "ARFF & CSV Databases", "arff", "csv");
         chooser.setFileFilter(filter);
         int returnVal = chooser.showOpenDialog(null);
-        if (returnVal == JFileChooser.APPROVE_OPTION){
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
             try {
                 System.out.println("YOu chose to open this file:" + chooser.getSelectedFile().getName());
                 String filename = chooser.getSelectedFile().getAbsolutePath();
                 DataSource source = new DataSource(filename);
                 instances = source.getDataSet();
-                
+
                 instances.setClassIndex(instances.numAttributes() - 1);
-            
+
                 System.out.println("\nDataset:\n");
                 System.out.println(instances);
                 txtResultado.setText(instances.toString());
@@ -159,31 +180,76 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_jButton1ActionPerformed
-
+    ArrayList<calidadDelAtributo> lista;
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         try {
             GainRatioAttributeEval evaluador = new GainRatioAttributeEval();
             evaluador.buildEvaluator(instances);
             String resultado = "Ranked attibutes:\n";
-            ArrayList<calidadDelAtributo> lista = new ArrayList<>();
-            for(int i = 0; i < instances.numAttributes()-1;i++){
+            lista = new ArrayList<>();
+            for (int i = 0; i < instances.numAttributes() - 1; i++) {
                 double rank = evaluador.evaluateAttribute(i);
-                calidadDelAtributo atri = new calidadDelAtributo(rank, i+1, instances.attribute(i).name());
+                calidadDelAtributo atri = new calidadDelAtributo(rank, i + 1, instances.attribute(i).name());
                 lista.add(atri);
-                resultado += String.format("%10.3f %3d %s\n", rank, i+1, instances.attribute(i).name());
+                resultado += String.format("%10.3f %3d %s\n", rank, i + 1, instances.attribute(i).name());
             }
             txtResultado.setText(resultado);
             Collections.sort(lista);
             resultado = "\nAtributos ordenados:\n";
-            for (calidadDelAtributo calidadDelAtributo : lista){
+            for (calidadDelAtributo calidadDelAtributo : lista) {
                 resultado += calidadDelAtributo.toString();
             }
             txtResultado.append(resultado);
-            
+
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(null, "No puedo hacer la selección de los atributos");
         }
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+        try {
+            J48 algoritmo = new J48();
+            algoritmo.buildClassifier(instances);
+            txtResultado.setText(algoritmo.toString());
+            Evaluation evaluador = new Evaluation(instances);
+            evaluador.crossValidateModel(algoritmo, instances, 10, new Random(0));
+            txtResultado.append(evaluador.toSummaryString() + "\n");
+            txtResultado.append("Precisión " + evaluador.pctCorrect());
+        } catch (Exception ex) {
+        }
+
+    }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        txtResultado.setText("");
+        for (int i = lista.size() - 1; i > 0; i--) {
+            try {
+                Remove borrar = new Remove();
+                String strAtri = "" + lista.get(i).getIndice();
+                for (int j = i + 1; j < lista.size(); j++) {
+                    strAtri += "," + lista.get(j).getIndice();
+                }
+                borrar.setAttributeIndices(strAtri);
+                borrar.setInvertSelection(false);
+                borrar.setInputFormat(instances);
+                Instances dato = Filter.useFilter(instances, borrar);
+                
+                
+                dato.setClassIndex(dato.numAttributes() - 1);
+
+                J48 algoritmo = new J48();
+                algoritmo.buildClassifier(dato);
+                txtResultado.setText(algoritmo.toString());
+                Evaluation evaluador = new Evaluation(dato);
+                evaluador.crossValidateModel(algoritmo, dato, 10, new Random(0));
+                txtResultado.append(evaluador.toSummaryString() + "\n");
+                txtResultado.append("Precisión " + evaluador.pctCorrect());
+
+            } catch (Exception ex) {
+                Logger.getLogger(VentanaPrincipal.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }//GEN-LAST:event_jButton4ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -224,6 +290,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
+    private javax.swing.JButton jButton4;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuBar jMenuBar1;
