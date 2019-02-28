@@ -5,6 +5,7 @@
  */
 package gui;
 
+import java.awt.BorderLayout;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,9 +13,17 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import modelos.ListaModelos;
+import modelos.Modelo;
 import modelos.calidadDelAtributo;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
 import weka.attributeSelection.GainRatioAttributeEval;
 import weka.classifiers.Evaluation;
 import weka.classifiers.trees.J48;
@@ -219,10 +228,15 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         }
 
     }//GEN-LAST:event_jButton3ActionPerformed
-
+    int dmls[];
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        ListaModelos listaModelos = new ListaModelos();
+
         txtResultado.setText("");
+        dmls = new int[lista.size()];
+        txtResultado.setText("No. Preciion No. COnd. SImples,  DML \n");
         for (int i = lista.size() - 1; i > 0; i--) {
+
             try {
                 Remove borrar = new Remove();
                 String strAtri = "" + lista.get(i).getIndice();
@@ -233,23 +247,57 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                 borrar.setInvertSelection(false);
                 borrar.setInputFormat(instances);
                 Instances dato = Filter.useFilter(instances, borrar);
-                
-                
+
                 dato.setClassIndex(dato.numAttributes() - 1);
 
                 J48 algoritmo = new J48();
                 algoritmo.buildClassifier(dato);
-                txtResultado.setText(algoritmo.toString());
+                //txtResultado.setText(algoritmo.toString());
                 Evaluation evaluador = new Evaluation(dato);
                 evaluador.crossValidateModel(algoritmo, dato, 10, new Random(0));
-                txtResultado.append(evaluador.toSummaryString() + "\n");
-                txtResultado.append("Precisión " + evaluador.pctCorrect());
+                int k = 10;
+                int numeroCS = (int) algoritmo.measureTreeSize() - 1;
+                int dml = (int) evaluador.incorrect() * k + numeroCS;
+                dmls[lista.size() - i] = dml;
+                String resultado = String.format("%2d %10.2f %3d  %10d\n", lista.size() - i + 1, evaluador.pctCorrect(), numeroCS, dml);
 
+                //txtResultado.append(evaluador.toSummaryString() + "\n");
+                //txtResultado.append("Precisión " + evaluador.pctCorrect());
+                txtResultado.append(resultado);
+                Modelo modelo = new Modelo(algoritmo, dato);
+                listaModelos.add(modelo);
             } catch (Exception ex) {
                 Logger.getLogger(VentanaPrincipal.class.getName()).log(Level.SEVERE, null, ex);
             }
+
         }
+        JFreeChart lineChart = ChartFactory.createLineChart(
+                "asd",
+                "DML", "Modelos",
+                createDataset(),
+                PlotOrientation.VERTICAL,
+                true, true, false);
+
+        JFrame marco = new JFrame();
+        marco.setLayout(new BorderLayout());
+        marco.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        marco.setSize(600, 500);
+        marco.setLocationRelativeTo(null);
+        marco.setVisible(true);
+
+        ChartPanel chartPanel = new ChartPanel(lineChart);
+        chartPanel.setPreferredSize(new java.awt.Dimension(560, 367));
+        marco.setContentPane(chartPanel);
+        //FrmModelo.ver(listaModelos);
     }//GEN-LAST:event_jButton4ActionPerformed
+
+    private DefaultCategoryDataset createDataset() {
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        for (int i = 0; i < dmls.length; i++) {
+            dataset.addValue(dmls[i], "dmls", "Modelo " + (i + 1));
+        }
+        return dataset;
+    }
 
     /**
      * @param args the command line arguments
